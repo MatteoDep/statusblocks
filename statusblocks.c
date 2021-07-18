@@ -31,6 +31,7 @@ static void (*writestatus) () = pstdout;
 
 
 #include "blocks.h"
+static unsigned int maxDelimLen = 50;
 unsigned int delimLen;
 
 static char statusbar[LENGTH(blocks)][CMDLENGTH] = {0};
