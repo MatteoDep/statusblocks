@@ -3,7 +3,7 @@ CC ?= cc
 # LDFLAGS = -lX11
 LDFLAGS =
 blocks_handler = statusblocks
-bar_launcher = launch-statusbar
+bar_launcher = launchbar
 
 output: $(blocks_handler).c blocks.h
 	${CC}  $(blocks_handler).c $(LDFLAGS) -o $(blocks_handler)
