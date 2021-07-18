@@ -1,2 +1,2 @@
 *.o
-ccls-cache*
+.ccls-cache*
