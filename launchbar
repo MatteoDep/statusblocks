@@ -1,7 +1,9 @@
 #! /bin/sh
 
-. "$XDG_CONFIG_HOME"/statusblocks/panel_config
-echo "$PANEL_FIFO"
+CONFIG_DIR="$XDG_CONFIG_HOME"/statusblocks
+CONFIG_FILE="$CONFIG_DIR"/statusblocks.conf
+
+. "$CONFIG_FILE"
 
 if xdo id -a "$PANEL_WM_NAME" > /dev/null ; then
 	printf "%s\n" "The panel is already running." >&2
@@ -24,8 +26,8 @@ get_fifo_updates(){
 feed_fifo
 get_fifo_updates < "$PANEL_FIFO" &
 
-[ "$1" = "--debug" ] && statusblocks ||
-    statusblocks | panel_command &
+[ "$1" = "--debug" ] && statusblocks "$CONFIG_DIR"/bar1 ||
+    statusblocks "$CONFIG_DIR"/bar1 | panel_command &
 
 wid=$(xdo id -m -a "$PANEL_WM_NAME")
 xdo above -t "$(xdo id -N "$WM_WM_CLASS" -n "$WM_WM_NAME" | sort | head -n 1)" "$wid"

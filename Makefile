@@ -3,7 +3,7 @@ CC ?= cc
 blocks_handler = statusblocks
 bar_launcher = launchbar
 
-output: $(blocks_handler).c blocks.h
+output: $(blocks_handler).c
 	${CC}  $(blocks_handler).c -o $(blocks_handler)
 
 clean:

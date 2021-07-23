@@ -13,6 +13,7 @@
 #define LENGTH(X) (sizeof(X) / sizeof(X[0]))
 #define MAXCMDLENGTH 1000
 #define MAXCFGLINELENGTH 500
+#define MAXBLOCKLENGTH (MAXCMDLENGTH + 2*MAXCFGLINELENGTH)
 
 #ifndef __OpenBSD__
 void dummysighandler(int num);
@@ -29,40 +30,49 @@ void pstdout();
 static void (*writestatus)() = pstdout;
 
 typedef struct {
-  char *command;
   unsigned int interval;
   unsigned int signal;
+  char *command;
 } Block;
 
-static Block blocks[] = {};
-static char *delims[] = {};
+static Block *blocks;
+static char *delims[MAXCFGLINELENGTH];
 
-static char *statusbar[MAXCMDLENGTH] = {};
+static char *statusbar[MAXBLOCKLENGTH];
 static char *statusstr[2];
 static int statusContinue = 1;
 static int returnStatus = 0;
-static char *configfile;
+static char configfile[100];
 
 void trim(char *line) {
   // strips away leading and trailing spaces
   int start = 0;
   int len = strlen(line);
   int end = len;
-  unsigned int count = 0;
-  while ((start < end) && (count < 2)) {
+  unsigned int startdone = 0;
+  unsigned int enddone = 0;
+
+  while (((!startdone) || (!enddone))) {
     if ((line[start] != ' ') && (line[start] != '\t'))
-      count++;
-    else
+      startdone = 1;
+    else if (!startdone)
       start++;
-    if ((line[end] != ' ') && (line[end] != '\t') && (line[end] != '\n'))
-      count++;
-    else
+    if ((line[end-1] != ' ') &&
+        (line[end-1] != '\t') &&
+        (line[end-1] != '\n') &&
+        (line[end-1] != '\0'))
+      enddone = 1;
+    else if (!enddone)
       end--;
+    if (start > end)
+      start = end;
   }
-  strncpy(line, line + start, end - start);
+  printf("%d %d\n", start, end);
+  strncpy(line, line+start, end-start);
+  line[end-start] = '\0';
 }
 
-void cfgline2block(Block block, char *line) {
+void cfgline2block(Block *block, char *line) {
   char *interval;
   char *signal;
   char *command;
@@ -88,6 +98,9 @@ void cfgline2block(Block block, char *line) {
       }
     }
   }
+  block->interval = atoi(interval);
+  block->signal = atoi(signal);
+  strcpy(block->command, command);
 }
 
 void parseconfig() {
@@ -96,11 +109,10 @@ void parseconfig() {
     printf("config file %s not found.\n", configfile);
     exit(EXIT_FAILURE);
   }
-
   char line[MAXCFGLINELENGTH];
   int i = 0;
-  *(delims + i) = "";
-  while (fgets(line, MAXCFGLINELENGTH, config)) {
+  *(delims + i)[0] = '\0';
+  while (fgets(line, MAXCFGLINELENGTH, config) != NULL) {
     trim(line);
     switch (line[0]) {
     case '\0':
@@ -109,11 +121,12 @@ void parseconfig() {
       break;
     case '\"':
       strncpy(*(delims + i), line + 1, strlen(line) - 2);
+      printf("%s\n", delims[i]);
       break;
     default:
-      cfgline2block(*(blocks + 1), line);
+      cfgline2block(blocks + 0, line);
       i++;
-      *(delims + i) = "";
+      *(delims + i)[0] = '\0';
     }
   }
   fclose(config);
@@ -222,8 +235,8 @@ void termhandler() { statusContinue = 0; }
 
 int main(int argc, char **argv) {
   // Handle command line arguments
-  if (!strlen(argv[1]))
-    strcpy(configfile, argv[1]);
+  if (strlen(argv[1]) > 0)
+    strcpy(configfile+0, argv[1]);
   parseconfig();
   signal(SIGTERM, termhandler);
   signal(SIGINT, termhandler);
