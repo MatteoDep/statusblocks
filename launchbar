@@ -26,8 +26,7 @@ get_fifo_updates(){
 feed_fifo
 get_fifo_updates < "$PANEL_FIFO" &
 
-[ "$1" = "--debug" ] && statusblocks "$CONFIG_DIR"/bar1 ||
-    statusblocks "$CONFIG_DIR"/bar1 | panel_command &
+statusblocks "$CONFIG_DIR"/bar1 | panel_command &
 
 wid=$(xdo id -m -a "$PANEL_WM_NAME")
 xdo above -t "$(xdo id -N "$WM_WM_CLASS" -n "$WM_WM_NAME" | sort | head -n 1)" "$wid"

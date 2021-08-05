@@ -162,7 +162,7 @@ void parseconfig(char *configfile) {
 }
 
 // opens process *cmd and stores output in *output
-void getcmd(const Block *block, char *delim, char *output) {
+void getcmd(const Block *block, char *output) {
   FILE *cmdf = popen(block->command, "r");
   if (!cmdf)
     return;
@@ -173,12 +173,9 @@ void getcmd(const Block *block, char *delim, char *output) {
     pclose(cmdf);
     return;
   }
-  if (delim[0] != '\0') {
-    // only chop off newline if one is present at the end
-    i = output[i - 1] == '\n' ? i - 1 : i;
-    strcpy(output + i, delim);
-  } else
-    output[i++] = '\0';
+  // only chop off newline if one is present at the end
+  i = output[i - 1] == '\n' ? i - 1 : i;
+  output[i++] = '\0';
   pclose(cmdf);
 }
 
@@ -188,7 +185,7 @@ void getcmds(int time) {
     current = blocks + i;
     if ((current->interval != 0 && time % current->interval == 0) ||
         time == -1) {
-      getcmd(current, delims[i + 1], statusbar[i]);
+      getcmd(current, statusbar[i]);
     }
   }
 }
@@ -200,7 +197,7 @@ void getsigcmds(unsigned int signal) {
     if (current->signal == signal) {
       if (i == 0)
         strcpy(statusbar[i], delims[i]);
-      getcmd(current, delims[i + 1], statusbar[i]);
+      getcmd(current, statusbar[i]);
     }
   }
 }
