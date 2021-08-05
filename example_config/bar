@@ -1,0 +1,14 @@
+# blocks configuration file
+# define format string:
+# "string for formatting"
+# define block:
+# interval signal block command
+# interval is given in seconds.
+
+"%{l}"              # left align for lemonbar
+0 1 sb-bspwm        # script in PATH
+0 1 sb-windowtitle  # script in PATH
+"%{r}"              # right align for lemonbar
+5 3 sb-battery      # script in PATH
+" "
+1 2 date

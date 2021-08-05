@@ -1,1 +1,26 @@
-/home/matteo/.dotfiles/.config/statusblocks/panel_config
+# mandatory variables
+PANEL_FIFO="/tmp/panel-fifo"
+PANEL_WM_NAME="statusblocks_lemonbar"
+PANEL_FIFO_SIGNALS="1"
+WM_WM_CLASS="Bspwm"
+WM_WM_NAME="root"
+
+# other variables
+COLOR_DEFAULT_FG=$(xrdb -query | awk '/foreground/ {print $2}')
+COLOR_DEFAULT_BG=$(xrdb -query | awk '/background/ {print $2}')
+GEOMETRY="x20"
+FONT_A="RobotoMono Nerd Font:pixelsize=12:antialias=true"
+FONT_B="CryptoIcons:size=10:antialias=true:autohint=true"
+
+# mandatory arguments
+panel_command(){
+    # bar command (e.g. lemonbar, dzen2, xmobar, ...)
+    lemonbar -a 32 -n "$PANEL_WM_NAME" -g "$GEOMETRY" -f "$FONT_A" -f "$FONT_B" -F "$COLOR_DEFAULT_FG" -B "$COLOR_DEFAULT_BG" | sh
+}
+feed_fifo(){
+    # something in the format:
+    # command > "$PANEL_FIFO" &
+    # leave this blank if you already feed the fifo file through
+    # some other mean (e.g. window manaager configuration file)
+    bspc subscribe report > "$PANEL_FIFO" &
+}
