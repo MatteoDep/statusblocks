@@ -10,10 +10,8 @@
 #define SIGPLUS SIGRTMIN
 #define SIGMINUS SIGRTMIN
 #endif
-#define LENGTH(X) (sizeof(X) / sizeof(X[0]))
 #define MAXCMDLENGTH 1000
-#define MAXCFGLINELENGTH 500
-#define MAXBLOCKLENGTH (MAXCMDLENGTH + 2*MAXCFGLINELENGTH)
+#define MAXLINELENGTH 500
 
 #ifndef __OpenBSD__
 void dummysighandler(int num);
@@ -26,23 +24,22 @@ void sighandler(int signum);
 int getstatus(char *str, char *last);
 void statusloop();
 void termhandler();
-void pstdout();
-static void (*writestatus)() = pstdout;
+void writestatus();
 
 typedef struct {
   unsigned int interval;
   unsigned int signal;
-  char *command;
+  char command[MAXLINELENGTH];
 } Block;
 
-static Block *blocks;
-static char *delims[MAXCFGLINELENGTH];
-
-static char *statusbar[MAXBLOCKLENGTH];
-static char *statusstr[2];
+int block_num = 0;
+Block *blocks;
+char **delims;
+static char **statusbar;
+static char *statusstrold;
+static char *statusstrnew;
 static int statusContinue = 1;
 static int returnStatus = 0;
-static char configfile[100];
 
 void trim(char *line) {
   // strips away leading and trailing spaces
@@ -67,15 +64,13 @@ void trim(char *line) {
     if (start > end)
       start = end;
   }
-  printf("%d %d\n", start, end);
   strncpy(line, line+start, end-start);
   line[end-start] = '\0';
 }
 
 void cfgline2block(Block *block, char *line) {
-  char *interval;
-  char *signal;
-  char *command;
+  char interval[5];
+  char signal[5];
   unsigned short int isprevspace = 0;
   unsigned short int count = 0;
   unsigned short int start = 0;
@@ -93,40 +88,74 @@ void cfgline2block(Block *block, char *line) {
         count++;
         start = i;
         if (count == 2)
-          strcpy(command, line + start);
+          strcpy(block->command, line + start);
         isprevspace = 0;
       }
     }
   }
   block->interval = atoi(interval);
   block->signal = atoi(signal);
-  strcpy(block->command, command);
 }
 
-void parseconfig() {
+void allocate(int block_num) {
+  // TODO realloc strings and check alloc successfull
+  // TODO refactor alloc in functions
+  if (block_num==0) {
+    blocks = (Block*) malloc(sizeof(Block));
+    delims = (char**) malloc(sizeof(char*));
+    delims[block_num] = (char*) malloc(MAXLINELENGTH*sizeof(char));
+    statusbar = (char**) malloc(sizeof(char*));
+    delims[block_num][0] = '\0';
+    statusstrold = (char*) malloc((block_num+1)*MAXLINELENGTH);
+    statusstrnew = (char*) malloc((block_num+1)*MAXLINELENGTH);
+  } else {
+    if (block_num>1)
+      blocks = realloc(blocks, block_num*sizeof(Block));
+      statusbar = realloc(statusbar, block_num*sizeof(char*));
+    delims = realloc(delims, (block_num+1)*sizeof(char*));
+    delims[block_num] = (char*) malloc(MAXLINELENGTH*sizeof(char));
+    statusbar[block_num-1] = (char*) malloc(MAXCMDLENGTH*sizeof(char));
+    delims[block_num][0] = '\0';
+    statusstrold = realloc(statusstrold, (block_num+1)*MAXLINELENGTH + block_num*MAXCMDLENGTH);
+    statusstrnew = realloc(statusstrnew, (block_num+1)*MAXLINELENGTH + block_num*MAXCMDLENGTH);
+  }
+}
+
+void free_memory() {
+  free(blocks);
+  free(statusstrold);
+  free(statusstrnew);
+  for (int i=0; i<block_num; i++) {
+    free(delims[i]);
+    free(statusbar[i]);
+  }
+  free(delims);
+  free(statusbar);
+}
+
+void parseconfig(char *configfile) {
   FILE *config = fopen(configfile, "r");
   if (!config) {
     printf("config file %s not found.\n", configfile);
     exit(EXIT_FAILURE);
   }
-  char line[MAXCFGLINELENGTH];
-  int i = 0;
-  *(delims + i)[0] = '\0';
-  while (fgets(line, MAXCFGLINELENGTH, config) != NULL) {
-    trim(line);
-    switch (line[0]) {
-    case '\0':
-      break;
-    case '#':
-      break;
-    case '\"':
-      strncpy(*(delims + i), line + 1, strlen(line) - 2);
-      printf("%s\n", delims[i]);
-      break;
-    default:
-      cfgline2block(blocks + 0, line);
-      i++;
-      *(delims + i)[0] = '\0';
+
+  allocate(block_num);
+  char buf[MAXLINELENGTH];
+  while (fgets(buf, MAXLINELENGTH, config) != NULL) {
+    trim(buf);
+    switch (buf[0]) {
+      case '\0':
+        break;
+      case '#':
+        break;
+      case '\"':
+        strncat(delims[block_num], buf + 1, strlen(buf) - 2);
+        break;
+      default:
+        block_num++;
+        allocate(block_num);
+        cfgline2block(blocks+(block_num-1), buf);
     }
   }
   fclose(config);
@@ -155,12 +184,10 @@ void getcmd(const Block *block, char *delim, char *output) {
 
 void getcmds(int time) {
   const Block *current;
-  for (unsigned int i = 0; i < LENGTH(blocks); i++) {
+  for (unsigned int i = 0; i < block_num; i++) {
     current = blocks + i;
     if ((current->interval != 0 && time % current->interval == 0) ||
         time == -1) {
-      if (i == 0)
-        strcpy(statusbar[i], delims[i]);
       getcmd(current, delims[i + 1], statusbar[i]);
     }
   }
@@ -168,7 +195,7 @@ void getcmds(int time) {
 
 void getsigcmds(unsigned int signal) {
   const Block *current;
-  for (unsigned int i = 0; i < LENGTH(blocks); i++) {
+  for (unsigned int i = 0; i < block_num; i++) {
     current = blocks + i;
     if (current->signal == signal) {
       if (i == 0)
@@ -185,7 +212,7 @@ void setupsignals() {
     signal(i, dummysighandler);
 #endif
 
-  for (unsigned int i = 0; i < LENGTH(blocks); i++) {
+  for (unsigned int i = 0; i < block_num; i++) {
     if (blocks[i].signal > 0)
       signal(SIGMINUS + blocks[i].signal, sighandler);
   }
@@ -193,18 +220,20 @@ void setupsignals() {
 
 int getstatus(char *str, char *last) {
   strcpy(last, str);
-  str[0] = '\0';
-  for (unsigned int i = 0; i < LENGTH(blocks); i++)
+  str = strcpy(str, delims[0]);
+  for (unsigned int i = 0; i < block_num; i++) {
     strcat(str, statusbar[i]);
+    strcat(str, delims[i+1]);
+  }
   str[strlen(str)] = '\0';
   return strcmp(str, last); // 0 if they are the same
 }
 
-void pstdout() {
+void writestatus() {
   // Only write out if text has changed.
-  if (!getstatus(statusstr[0], statusstr[1]))
+  if (!getstatus(statusstrnew, statusstrold))
     return;
-  printf("%s\n", statusstr[0]);
+  printf("%s\n", statusstrnew);
   fflush(stdout);
 }
 
@@ -235,12 +264,13 @@ void termhandler() { statusContinue = 0; }
 
 int main(int argc, char **argv) {
   // Handle command line arguments
+  static char configfile[100];
   if (strlen(argv[1]) > 0)
     strcpy(configfile+0, argv[1]);
-  parseconfig();
+  parseconfig(configfile);
   signal(SIGTERM, termhandler);
   signal(SIGINT, termhandler);
-  signal(SIGUSR1, parseconfig);
   statusloop();
+  free_memory();
   return 0;
 }
