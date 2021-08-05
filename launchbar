@@ -1,12 +1,12 @@
 #! /bin/sh
 
 CONFIG_DIR="$XDG_CONFIG_HOME"/statusblocks
-CONFIG_FILE="$CONFIG_DIR"/statusblocks.conf
+CONFIG_FILE="$CONFIG_DIR"/statusblocksrc
 
 . "$CONFIG_FILE"
 
 if xdo id -a "$PANEL_WM_NAME" > /dev/null ; then
-	printf "%s\n" "The panel is already running." >&2
+	printf "The panel is already running.\n" >&2
 	exit 1
 fi
 
@@ -26,7 +26,16 @@ get_fifo_updates(){
 feed_fifo
 get_fifo_updates < "$PANEL_FIFO" &
 
-statusblocks "$CONFIG_DIR"/bar1 | panel_command &
+for barfile in $*; do
+    if [ -f "$CONFIG_DIR/$barfile" ]; then
+        barfile="$CONFIG_DIR/$barfile"
+    elif [ ! -f "$barfile" ]; then
+        printf "Neither file %s or%s is found.\n" "$CONFIG_DIR/$barfile" "$barfile" >&2
+        exit 1
+    fi
+
+    statusblocks "$barfile" | panel_command &
+done
 
 wid=$(xdo id -m -a "$PANEL_WM_NAME")
 xdo above -t "$(xdo id -N "$WM_WM_CLASS" -n "$WM_WM_NAME" | sort | head -n 1)" "$wid"
