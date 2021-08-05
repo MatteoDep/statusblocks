@@ -3,6 +3,11 @@ This project is a fork of dwmblocks that I'm modifying to make it work
 with other bars that read from standard input like dzen2 and lemonbar.
 To date it has only been tested for lemonbar with bspwm.
 
+## Installation
+
+Clone the repo, navigate inside and do `sudo make clean install`.
+To uninstall do `sudo make uninstall`.
+
 ## Configuration
 In `example_config/statusblocksrc` you can find an example configuration file that
 you can put in your `XDG_CONFIG_HOME/statusblocks/` or
