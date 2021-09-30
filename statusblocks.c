@@ -114,8 +114,9 @@ void allocate(int block_num) {
       statusbar = realloc(statusbar, block_num*sizeof(char*));
     delims = realloc(delims, (block_num+1)*sizeof(char*));
     delims[block_num] = (char*) malloc(MAXLINELENGTH*sizeof(char));
-    statusbar[block_num-1] = (char*) malloc(MAXCMDLENGTH*sizeof(char));
     delims[block_num][0] = '\0';
+    statusbar[block_num-1] = (char*) malloc(MAXCMDLENGTH*sizeof(char));
+    statusbar[block_num-1][0] = '\0';
     statusstrold = realloc(statusstrold, (block_num+1)*MAXLINELENGTH + block_num*MAXCMDLENGTH);
     statusstrnew = realloc(statusstrnew, (block_num+1)*MAXLINELENGTH + block_num*MAXCMDLENGTH);
   }
