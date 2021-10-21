@@ -1,9 +1,16 @@
-# mandatory variables
+# FIFO to read from (default=/tmp/panel-fifo)
+# this is useful to get informations from your window manager.
+# For example in bspwm put this in your bspwmrc:
+#   ```
+#   # feed fifo file to inform statusbar of wm changes
+#   PANEL_FIFO=/tmp/panel-fifo
+#   [ -e "$PANEL_FIFO" ] && rm "$PANEL_FIFO"
+#   mkfifo "$PANEL_FIFO"
+#   bspc subscribe report > "$PANEL_FIFO" &
+#   ```
 PANEL_FIFO="/tmp/panel-fifo"
-PANEL_WM_NAME="statusblocks_lemonbar"
-PANEL_FIFO_SIGNALS="1"
-WM_WM_CLASS="Bspwm"
-WM_WM_NAME="root"
+# signal to send when FIFO is updated (default=1)
+PANEL_FIFO_SIGNAL=1
 
 # other variables
 COLOR_DEFAULT_FG=$(xrdb -query | awk '/foreground/ {print $2}')
@@ -15,12 +22,15 @@ FONT_B="CryptoIcons:size=10:antialias=true:autohint=true"
 # mandatory arguments
 panel_command(){
     # bar command (e.g. lemonbar, dzen2, xmobar, ...)
-    lemonbar -a 32 -n "$PANEL_WM_NAME" -g "$GEOMETRY" -f "$FONT_A" -f "$FONT_B" -F "$COLOR_DEFAULT_FG" -B "$COLOR_DEFAULT_BG" | sh
-}
-feed_fifo(){
-    # something in the format:
-    # command > "$PANEL_FIFO" &
-    # leave this blank if you already feed the fifo file through
-    # some other mean (e.g. window manaager configuration file)
-    bspc subscribe report > "$PANEL_FIFO" &
+    # the variable $1 is the name of the bar.
+    case "$1" in
+        bar1)
+            lemonbar -a 32 -n "$PANEL_WM_NAME" -g "$GEOMETRY" \
+            -f "$FONT_A" -f "$FONT_B" \
+            -F "$COLOR_DEFAULT_FG" -B "$COLOR_DEFAULT_BG" | sh
+            ;;
+        *)
+            notify-send -u 'critical' "statusblocks" "unknown bar $1"
+            ;;
+    esac
 }

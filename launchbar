@@ -5,39 +5,25 @@ CONFIG_FILE="$CONFIG_DIR"/statusblocksrc
 
 . "$CONFIG_FILE"
 
-if xdo id -a "$PANEL_WM_NAME" > /dev/null ; then
-	printf "The panel is already running.\n" >&2
-	exit 1
-fi
-
 trap 'trap - TERM; kill 0' INT TERM QUIT EXIT
-
-[ -e "$PANEL_FIFO" ] && rm "$PANEL_FIFO"
-mkfifo "$PANEL_FIFO"
 
 get_fifo_updates(){
     while read -r line ; do
-        for signal in $PANEL_FIFO_SIGNALS; do
-            pkill -RTMIN+$(expr "$signal") statusblocks
-        done
+        pkill -RTMIN+"${PANEL_FIFO_SIGNAL:-1}" statusblocks
     done
 }
 
-feed_fifo
-get_fifo_updates < "$PANEL_FIFO" &
+get_fifo_updates < "${PANEL_FIFO:-/tmp/panel-fifo}" &
 
-for barfile in $*; do
-    if [ -f "$CONFIG_DIR/$barfile" ]; then
-        barfile="$CONFIG_DIR/$barfile"
-    elif [ ! -f "$barfile" ]; then
-        printf "Neither file %s or%s is found.\n" "$CONFIG_DIR/$barfile" "$barfile" >&2
+for bar in $*; do
+    if [ -f "$CONFIG_DIR/$bar" ]; then
+        barfile="$CONFIG_DIR/$bar"
+    else
+        printf "File %s is not found.\n" "$CONFIG_DIR/$barfile" >&2
         exit 1
     fi
 
-    statusblocks "$barfile" | panel_command &
+    statusblocks "$barfile" | panel_command "$bar" &
 done
-
-wid=$(xdo id -m -a "$PANEL_WM_NAME")
-xdo above -t "$(xdo id -N "$WM_WM_CLASS" -n "$WM_WM_NAME" | sort | head -n 1)" "$wid"
 
 wait
