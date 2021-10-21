@@ -17,7 +17,7 @@ COLOR_DEFAULT_FG=$(xrdb -query | awk '/foreground/ {print $2}')
 COLOR_DEFAULT_BG=$(xrdb -query | awk '/background/ {print $2}')
 GEOMETRY="x20"
 FONT_A="RobotoMono Nerd Font:pixelsize=12:antialias=true"
-FONT_B="CryptoIcons:size=10:antialias=true:autohint=true"
+FONT_B="Noto Color Emoji:size=10:antialias=true:autohint=true"
 
 # mandatory arguments
 panel_command(){
