@@ -9,7 +9,7 @@ Clone the repo, navigate inside and `sudo make clean install`.
 To uninstall use `sudo make uninstall`.
 
 ## Configuration
-In `example_config/statusblocksrc` you can find an example
+In `examples/statusblocksrc` you can find an example
 configuration file that you can put in your
 `XDG_CONFIG_HOME/statusblocks/` (usually `~/.config/statusblocks/`)
 and adjust for your needs.
@@ -34,11 +34,17 @@ Then you need to modify the `panel_command` function to accept the parameter
 `bar1`.
 
 ## Usage
-you can simply launch the bars in your config directory with
+you can simply launch a bars in your config directory with
 
 ```
-launchbar bar1 bar2
+launchbar bar1,arg1,arg2
 ```
+
+where the arguments after the comma are optional and will be given as secondary
+arguments to the `panel_command` function.
+So that `arg1` corresponds to `$2` in `panel_command` and so on.
+One way secondary arguments can be useful is to specify the monitor, as
+suggested in `examples`.
 
 To update the modules (blocks) you can send the correspondent signal (as
 specified in the bar file) to the statusblocks process.

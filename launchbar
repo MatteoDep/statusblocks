@@ -15,15 +15,16 @@ get_fifo_updates(){
 
 get_fifo_updates < "${PANEL_FIFO:-/tmp/panel-fifo}" &
 
-for bar in $*; do
-    if [ -f "$CONFIG_DIR/$bar" ]; then
-        barfile="$CONFIG_DIR/$bar"
-    else
-        printf "File %s is not found.\n" "$CONFIG_DIR/$barfile" >&2
-        exit 1
-    fi
+bar=$(echo "$*" | cut -d',' -f1)
+args=$(echo "$*" | sed 's/'"$bar"',\(.*\)/\1/;s/,/ /')
 
-    statusblocks "$barfile" | panel_command "$bar" &
-done
+if [ -f "$CONFIG_DIR/$bar" ]; then
+    barfile="$CONFIG_DIR/$bar"
+else
+    printf "File %s is not found.\n" "$CONFIG_DIR/$barfile" >&2
+    exit 1
+fi
+
+statusblocks "$barfile" | panel_command $bar $args &
 
 wait

@@ -23,12 +23,16 @@ FONT_B="Noto Color Emoji:size=10:antialias=true:autohint=true"
 panel_command(){
     # bar command (e.g. lemonbar, dzen2, xmobar, ...)
     # the variable $1 is the name of the bar.
+    geometries=$(xrandr --listactivemonitors |
+            sed -n 's/^\s*[0-9]\+:.*\s\+\([0-9]\+\)\/[0-9]\+x[0-9]\+\/[0-9]\++\([0-9]\+\)+\([0-9]\+\)\s\+\(.\+\)$/\4 \1x'"$BAR_HEIGHT"'+\2+\3/p')
+    geometry=$(echo "$geometries" | awk '/'"$2"'/ {print $2}')
     case "$1" in
         bar1)
-            lemonbar -a 32 -n "$PANEL_WM_NAME" -g "$GEOMETRY" \
-            -f "$FONT_A" -f "$FONT_B" \
-            -F "$COLOR_DEFAULT_FG" -B "$COLOR_DEFAULT_BG" | sh
+            lemonbar -a 32 -n "$1-$2" -g "$geometry" \
+                -f "$FONT_A" -f "$FONT_B" -f "$FONT_C" \
+                -F "$COLOR_DEFAULT_FG" -B "$COLOR_DEFAULT_BG" | sh
             ;;
+
         *)
             notify-send -u 'critical' "statusblocks" "unknown bar $1"
             ;;
