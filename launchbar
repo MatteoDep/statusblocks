@@ -16,7 +16,7 @@ get_fifo_updates(){
 get_fifo_updates < "${PANEL_FIFO:-/tmp/panel-fifo}" &
 
 bar=$(echo "$*" | cut -d',' -f1)
-args=$(echo "$*" | sed 's/'"$bar"',\(.*\)/\1/;s/,/ /')
+args=$(echo "$*" | sed 's/'"$bar"',\(.*\)/\1/;s/,/ /g')
 
 if [ -f "$CONFIG_DIR/$bar" ]; then
     barfile="$CONFIG_DIR/$bar"
